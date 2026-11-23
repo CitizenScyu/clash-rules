@@ -42,46 +42,53 @@ dns:
     ipcidr:
       - 240.0.0.0/4
 
-# ---------- 远程规则集（对应 DNS.ini 的 7 个 ruleset URL）----------
+# ---------- 远程规则集（对应 DNS.ini 的全部远程 ruleset URL，共 12 个）----------
+# 【重要】behavior 取决于文件内容格式，不取决于名字里有没有 IP：
+#   - ACL4SSR / blackmatrix7 / gist 的 .list 都是 classic 风格的完整规则行（如 "DOMAIN-SUFFIX,x.com"、"IP-CIDR,1.2.3.0/24,no-resolve"）
+#     → 必须 behavior: classical。其中 5 个是域名+IP 混合集，声明成 domain/ipcidr 会装不下。
+#     声明错的后果不是报错，而是静默失效：domain 会把整行当字面域名、ipcidr 解析出 0 条。
+#     （2026-11-23 实测：12 个全部声明错，provider 显示已加载但规则一条都命中不了）
+#   - 仅 Loyalsoldier direct.txt 是 YAML payload 纯域名 → behavior: domain
+#   - classic 行内自带的 no-resolve 忠实保留，与 subconverter 展开后的内联规则等价
 rule-providers:
   BanAD:
     type: http
-    behavior: domain
+    behavior: classical
     format: text
     url: https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/BanAD.list
     path: ./ruleset/BanAD.list
     interval: 86400
   BanProgramAD:
     type: http
-    behavior: domain
+    behavior: classical
     format: text
     url: https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/BanProgramAD.list
     path: ./ruleset/BanProgramAD.list
     interval: 86400
   GoogleCNProxyIP:
     type: http
-    behavior: ipcidr
+    behavior: classical
     format: text
     url: https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/GoogleCNProxyIP.list
     path: ./ruleset/GoogleCNProxyIP.list
     interval: 86400
   Scholar:
     type: http
-    behavior: domain
+    behavior: classical
     format: text
     url: https://gist.githubusercontent.com/yippp/4f87ecc4ecaf4b7594a734ccd13b24fd/raw/ffae8e87f78880c0386c6632ab8f76711447a61a/Scholar.list
     path: ./ruleset/Scholar.list
     interval: 86400
   LocalAreaNetwork:
     type: http
-    behavior: domain
+    behavior: classical
     format: text
     url: https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/LocalAreaNetwork.list
     path: ./ruleset/LocalAreaNetwork.list
     interval: 86400
   UnBan:
     type: http
-    behavior: domain
+    behavior: classical
     format: text
     url: https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/UnBan.list
     path: ./ruleset/UnBan.list
@@ -95,35 +102,35 @@ rule-providers:
     interval: 86400
   ChinaDomain:
     type: http
-    behavior: domain
+    behavior: classical
     format: text
     url: https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/ChinaDomain.list
     path: ./ruleset/ChinaDomain.list
     interval: 86400
   ChinaMedia:
     type: http
-    behavior: domain
+    behavior: classical
     format: text
     url: https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/ChinaMedia.list
     path: ./ruleset/ChinaMedia.list
     interval: 86400
   LanZouYun:
     type: http
-    behavior: domain
+    behavior: classical
     format: text
     url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/LanZouYun/LanZouYun.list
     path: ./ruleset/LanZouYun.list
     interval: 86400
   ChinaCompanyIp:
     type: http
-    behavior: ipcidr
+    behavior: classical
     format: text
     url: https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/ChinaCompanyIp.list
     path: ./ruleset/ChinaCompanyIp.list
     interval: 86400
   ChinaIp:
     type: http
-    behavior: ipcidr
+    behavior: classical
     format: text
     url: https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/ChinaIp.list
     path: ./ruleset/ChinaIp.list
