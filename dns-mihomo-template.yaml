@@ -14,47 +14,23 @@ mode: rule
 log-level: info
 external-controller: 127.0.0.1:9090
 
-# ---------- DNS（DNS.ini 原版无 dns 段，老 subconverter 也不生成 dns；以下为 mihomo 防泄漏推荐配置）----------
-dns:
-  enable: true
-  listen: :1053
-  ipv6: false
-  enhanced-mode: fake-ip
-  fake-ip-range: 198.18.0.1/16
-  fake-ip-filter:
-    - "*.lan"
-    - "*.local"
-    - "+.stun.*.*"
-    - "+.stun.*.*.*"
-    - "+.stun.*.*.*.*"
-    - "+.stun.*.*.*.*.*"
-    - "time.*.com"
-    - "time.*.gov"
-    - "time.*.apple.com"
-    - "time1.cloud.tencent.com"
-    - "+.market.xiaomi.com"
-  default-nameserver:
-    - 223.5.5.5
-    - 119.29.29.29
-  nameserver:
-    - https://223.5.5.5/dns-query
-    - https://1.12.12.12/dns-query
-  fallback:
-    - https://1.1.1.1/dns-query
-    - https://8.8.8.8/dns-query
-  fallback-filter:
-    geoip-code: CN
-    ipcidr:
-      - 240.0.0.0/4
-
+# ---------- DNS ----------
+# 【2026-11-23 事故修复】原先这里有一段"防泄漏推荐 dns"(fallback 指向 1.1.1.1 / 8.8.8.8 的 DoH)。
+#   后果: 这两个地址从国内直连不通; mihomo 对判定为境外的域名优先采用 fallback 的结果,
+#   fallback 超时 => 节点服务器域名解析失败 => 68 个节点里 57 个连不上(实测 A/B: 11 通 vs 65 通)。
+#   现在整段删除, 交给客户端自己的 DNS 设置。客户端若需要 dns 段, 用客户端的覆写/全局配置来加,
+#   不要写进本模板。
+#
 # ---------- 远程规则集（对应 DNS.ini 的全部远程 ruleset URL，共 12 个）----------
-# 【重要】behavior 取决于文件内容格式，不取决于名字里有没有 IP：
-#   - ACL4SSR / blackmatrix7 / gist 的 .list 都是 classic 风格的完整规则行（如 "DOMAIN-SUFFIX,x.com"、"IP-CIDR,1.2.3.0/24,no-resolve"）
-#     → 必须 behavior: classical。其中 5 个是域名+IP 混合集，声明成 domain/ipcidr 会装不下。
-#     声明错的后果不是报错，而是静默失效：domain 会把整行当字面域名、ipcidr 解析出 0 条。
-#     （2026-11-23 实测：12 个全部声明错，provider 显示已加载但规则一条都命中不了）
-#   - 仅 Loyalsoldier direct.txt 是 YAML payload 纯域名 → behavior: domain
-#   - classic 行内自带的 no-resolve 忠实保留，与 subconverter 展开后的内联规则等价
+# 【重要】behavior / format 取决于文件内容格式，不取决于名字里有没有 IP：
+#   - ACL4SSR / blackmatrix7 / gist 的 .list 是 classic 风格的完整规则行（如 "DOMAIN-SUFFIX,x.com"、"IP-CIDR,1.2.3.0/24,no-resolve"）
+#     → 必须 behavior: classical + format: text。其中 5 个是域名+IP 混合集，声明成 domain/ipcidr 会装不下。
+#   - Loyalsoldier direct.txt 是 YAML 文件: 第一行 "payload:"，其后每行 "- '+.domain'"
+#     → 必须 behavior: domain + format: yaml。
+#     (2026-11-23 事故: 曾写成 format: text, mihomo 把 "- '+.xxx'" 整行当域名, 11 万条全部报
+#      "skip invalid domain … wildcard must occupy the entire label" 被跳过; ruleCount 仍显示 11 万,
+#      所以不能只看 ruleCount, 必须看内核日志里有没有 warning。)
+#   声明错的后果不是报错，而是静默失效。
 rule-providers:
   BanAD:
     type: http
@@ -101,7 +77,7 @@ rule-providers:
   direct:
     type: http
     behavior: domain
-    format: text
+    format: yaml
     url: https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/direct.txt
     path: ./ruleset/direct.txt
     interval: 86400
