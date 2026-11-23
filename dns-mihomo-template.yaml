@@ -1,7 +1,12 @@
 # mihomo 完整配置模板 — 由 D:\ClaudeCode\projects\main\clash-rules\DNS.ini (subconverter INI) 翻译
 # 翻译日期: 2026-11-23 | 规则顺序、分组结构忠实还原 DNS.ini (f525ba8)
-# 用法: Sub-Store「文件」功能托管；客户端订阅链接 = /api/file/dns-mihomo?type=mihomoConfig&sourceType=subscription&sourceName=<订阅名>
-# 节点注入: mihomoConfig 类型会把 source 订阅的节点自动写入 proxies 并按脚本处理；分组内 use/include-all 由下方脚本段补齐
+# 用法: Sub-Store「文件」(type=mihomoConfig) 以本文件为远程模板，process 里挂一个
+#       「Add Proxies From Subscription Operator」把订阅/组合订阅的节点写入 proxies。
+#       客户端订阅链接 = https://<sub-store>/…/api/file/dns-mihomo
+# 节点注入: 由上述操作符完成；本文件不含 proxies 段。分组用 include-all 自动收录全部节点。
+# 维护: 改规则直接改本文件并推送。Sub-Store 对本远程模板有磁盘持久化缓存, 默认 1 小时
+#       (源码 $Y(): resourceCacheTtl 缺省 36e5 ms), 推送后最多 1 小时生效;
+#       客户端订阅链接加 &noCache=1 可立即绕过缓存。
 
 mixed-port: 7890
 allow-lan: true
@@ -152,7 +157,11 @@ proxy-groups:
     tolerance: 50
     include-all: true
     filter: "^(?!🚀|🤖|♻️)"
-    exclude-filter: "过期|到期|剩余流量|时间|重置|群|Telegram|流量|套餐|过期"
+    # 【相对 DNS.ini 的新增项】原版为 .* 不过滤。这里只剔除机场塞进节点列表的「说明文字假节点」，
+    # 避免 url-test 把延迟探测打到假节点上。只用精确短语，不用「时间」「群」这类单字词
+    # （实测会误伤「香港 v2-时间优化」「香港 BGP-群聊专线」等真实节点名）。
+    # 不想要这层过滤就删掉本行。
+    exclude-filter: "剩余流量|套餐到期|距离下次重置|过期时间|官网|更新订阅|Traffic"
   - name: 🤖 OPenAI
     type: select
     proxies:
