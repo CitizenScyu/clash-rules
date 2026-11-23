@@ -1,0 +1,288 @@
+# mihomo 完整配置模板 — 由 D:\ClaudeCode\projects\main\clash-rules\DNS.ini (subconverter INI) 翻译
+# 翻译日期: 2026-11-23 | 规则顺序、分组结构忠实还原 DNS.ini (f525ba8)
+# 用法: Sub-Store「文件」功能托管；客户端订阅链接 = /api/file/dns-mihomo?type=mihomoConfig&sourceType=subscription&sourceName=<订阅名>
+# 节点注入: mihomoConfig 类型会把 source 订阅的节点自动写入 proxies 并按脚本处理；分组内 use/include-all 由下方脚本段补齐
+
+mixed-port: 7890
+allow-lan: true
+mode: rule
+log-level: info
+external-controller: 127.0.0.1:9090
+
+# ---------- DNS（DNS.ini 原版无 dns 段，老 subconverter 也不生成 dns；以下为 mihomo 防泄漏推荐配置）----------
+dns:
+  enable: true
+  listen: :1053
+  ipv6: false
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  fake-ip-filter:
+    - "*.lan"
+    - "*.local"
+    - "+.stun.*.*"
+    - "+.stun.*.*.*"
+    - "+.stun.*.*.*.*"
+    - "+.stun.*.*.*.*.*"
+    - "time.*.com"
+    - "time.*.gov"
+    - "time.*.apple.com"
+    - "time1.cloud.tencent.com"
+    - "+.market.xiaomi.com"
+  default-nameserver:
+    - 223.5.5.5
+    - 119.29.29.29
+  nameserver:
+    - https://223.5.5.5/dns-query
+    - https://1.12.12.12/dns-query
+  fallback:
+    - https://1.1.1.1/dns-query
+    - https://8.8.8.8/dns-query
+  fallback-filter:
+    geoip-code: CN
+    ipcidr:
+      - 240.0.0.0/4
+
+# ---------- 远程规则集（对应 DNS.ini 的 7 个 ruleset URL）----------
+rule-providers:
+  BanAD:
+    type: http
+    behavior: domain
+    format: text
+    url: https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/BanAD.list
+    path: ./ruleset/BanAD.list
+    interval: 86400
+  BanProgramAD:
+    type: http
+    behavior: domain
+    format: text
+    url: https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/BanProgramAD.list
+    path: ./ruleset/BanProgramAD.list
+    interval: 86400
+  GoogleCNProxyIP:
+    type: http
+    behavior: ipcidr
+    format: text
+    url: https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/Ruleset/GoogleCNProxyIP.list
+    path: ./ruleset/GoogleCNProxyIP.list
+    interval: 86400
+  Scholar:
+    type: http
+    behavior: domain
+    format: text
+    url: https://gist.githubusercontent.com/yippp/4f87ecc4ecaf4b7594a734ccd13b24fd/raw/ffae8e87f78880c0386c6632ab8f76711447a61a/Scholar.list
+    path: ./ruleset/Scholar.list
+    interval: 86400
+  LocalAreaNetwork:
+    type: http
+    behavior: domain
+    format: text
+    url: https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/LocalAreaNetwork.list
+    path: ./ruleset/LocalAreaNetwork.list
+    interval: 86400
+  UnBan:
+    type: http
+    behavior: domain
+    format: text
+    url: https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/UnBan.list
+    path: ./ruleset/UnBan.list
+    interval: 86400
+  direct:
+    type: http
+    behavior: domain
+    format: text
+    url: https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/direct.txt
+    path: ./ruleset/direct.txt
+    interval: 86400
+  ChinaDomain:
+    type: http
+    behavior: domain
+    format: text
+    url: https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/ChinaDomain.list
+    path: ./ruleset/ChinaDomain.list
+    interval: 86400
+  ChinaMedia:
+    type: http
+    behavior: domain
+    format: text
+    url: https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/ChinaMedia.list
+    path: ./ruleset/ChinaMedia.list
+    interval: 86400
+  LanZouYun:
+    type: http
+    behavior: domain
+    format: text
+    url: https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/LanZouYun/LanZouYun.list
+    path: ./ruleset/LanZouYun.list
+    interval: 86400
+  ChinaCompanyIp:
+    type: http
+    behavior: ipcidr
+    format: text
+    url: https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/ChinaCompanyIp.list
+    path: ./ruleset/ChinaCompanyIp.list
+    interval: 86400
+  ChinaIp:
+    type: http
+    behavior: ipcidr
+    format: text
+    url: https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/ChinaIp.list
+    path: ./ruleset/ChinaIp.list
+    interval: 86400
+
+proxy-groups:
+  # ---------- 分组严格 3 个，对齐 DNS.ini ----------
+  - name: 🚀 节点选择
+    type: select
+    proxies:
+      - ♻️ 自动选择
+      - DIRECT
+    include-all: true          # 原版 .* 槽位 = 展开所有节点
+    filter: "^(?!🤖|♻️)"       # 排除分组自身防环（include-all 会带入其他分组，这里排除组名）
+  - name: ♻️ 自动选择
+    type: url-test
+    url: http://www.gstatic.com/generate_204
+    interval: 600
+    tolerance: 50
+    include-all: true
+    filter: "^(?!🚀|🤖|♻️)"
+    exclude-filter: "过期|到期|剩余流量|时间|重置|群|Telegram|流量|套餐|过期"
+  - name: 🤖 OPenAI
+    type: select
+    proxies:
+      - 🚀 节点选择
+      - REJECT
+    include-all: true
+    filter: "^(?!🚀|♻️|🤖)"
+
+rules:
+  # ========== 1. 广告拦截（前置，避免被 direct.txt 误判） ==========
+  - RULE-SET,BanAD,REJECT
+  - RULE-SET,BanProgramAD,REJECT
+
+  # ========== 2. 🤖 OPenAI（AI / LLM / Gemini） ==========
+  # 中转 API 站点（2026-09-04 追加）：CF 拦国内出口，必须走代理
+  - DOMAIN-SUFFIX,kktoken.cc,🤖 OPenAI
+  - DOMAIN-SUFFIX,tabitoken.com,🤖 OPenAI
+  - DOMAIN-SUFFIX,gorouter.app,🤖 OPenAI
+  - DOMAIN-SUFFIX,seekai.cc,🤖 OPenAI
+  # 私有 Emby
+  - DOMAIN-SUFFIX,c.emby.wtf,🤖 OPenAI
+  - DOMAIN-SUFFIX,chatboxai.app,🤖 OPenAI
+  - DOMAIN-SUFFIX,groq.com,🤖 OPenAI
+  - DOMAIN-SUFFIX,ai.com,🤖 OPenAI
+  - DOMAIN-SUFFIX,openai.com,🤖 OPenAI
+  - DOMAIN-SUFFIX,chatgpt.com,🤖 OPenAI
+  - DOMAIN-SUFFIX,oaiusercontent.com,🤖 OPenAI
+  - DOMAIN,openaiapi-site.azureedge.net,🤖 OPenAI
+  - DOMAIN,ai.google.dev,🤖 OPenAI
+  # ---- Gemini 全量（2026-11-13，对齐 MetaCubeX geosite:google-gemini 49 条）----
+  # 原只有 13 条（blackmatrix7 2025-06 BardAI 版），AI Studio / NotebookLM /
+  # Gemini CLI / Antigravity 等全部未命中，落到 FINAL → 节点选择，导致同一服务
+  # 出口不一致。以下全部前置，优先于后面所有 DIRECT 规则集与 GEOIP。
+  - DOMAIN,alkalicore-pa.clients6.google.com,🤖 OPenAI
+  - DOMAIN,webchannel-alkalimakersuite-pa.clients6.google.com,🤖 OPenAI
+  - DOMAIN,geminiweb-pa.clients.google.com,🤖 OPenAI
+  - DOMAIN,geminiweb-pa.clients6.google.com,🤖 OPenAI
+  - DOMAIN,appsgenaiserver-pa.clients.google.com,🤖 OPenAI
+  - DOMAIN,appsgenaiserver-pa.clients6.google.com,🤖 OPenAI
+  - DOMAIN,alkalimakersuite-pa.clients6.google.com,🤖 OPenAI
+  # 上游清单为 +.（含子域），用 SUFFIX 以免漏掉 alt1-xxx 等变体主机
+  - DOMAIN-SUFFIX,appsgenaiserver-pa.googleapis.com,🤖 OPenAI
+  - DOMAIN-SUFFIX,cloudaicompanion.googleapis.com,🤖 OPenAI
+  - DOMAIN-SUFFIX,cloudcode-pa.googleapis.com,🤖 OPenAI
+  - DOMAIN-SUFFIX,daily-cloudcode-pa.googleapis.com,🤖 OPenAI
+  - DOMAIN-SUFFIX,notebooklm-pa.googleapis.com,🤖 OPenAI
+  - DOMAIN-SUFFIX,notebooklm.googleapis.com,🤖 OPenAI
+  - DOMAIN-SUFFIX,antigravity-pa.googleapis.com,🤖 OPenAI
+  - DOMAIN-SUFFIX,antigravity.googleapis.com,🤖 OPenAI
+  - DOMAIN-SUFFIX,robinfrontend-pa.googleapis.com,🤖 OPenAI
+  - DOMAIN-SUFFIX,aisandbox-pa.googleapis.com,🤖 OPenAI
+  - DOMAIN-SUFFIX,aicode.googleapis.com,🤖 OPenAI
+  - DOMAIN-SUFFIX,aida.googleapis.com,🤖 OPenAI
+  - DOMAIN-SUFFIX,geller-pa.googleapis.com,🤖 OPenAI
+  - DOMAIN-SUFFIX,labstailwind.pa.googleapis.com,🤖 OPenAI
+  - DOMAIN,proactivebackend-pa.googleapis.com,🤖 OPenAI
+  # 注意 DOMAIN-SUFFIX 为点边界匹配：gemini.google 不匹配 gemini.google.com，
+  # 故 gemini.google / gemini.google.com 两条需并存。generativelanguage.*
+  # 由下方 DOMAIN-KEYWORD 覆盖，此处不再重复。
+  - DOMAIN-SUFFIX,gemini.google,🤖 OPenAI
+  - DOMAIN-SUFFIX,gemini.google.com,🤖 OPenAI
+  - DOMAIN-SUFFIX,gemini.gstatic.com,🤖 OPenAI
+  - DOMAIN-SUFFIX,bard.google.com,🤖 OPenAI
+  - DOMAIN-SUFFIX,aistudio.google.com,🤖 OPenAI
+  - DOMAIN-SUFFIX,makersuite.google.com,🤖 OPenAI
+  - DOMAIN-SUFFIX,ai.studio,🤖 OPenAI
+  - DOMAIN-SUFFIX,labs.google,🤖 OPenAI
+  - DOMAIN-SUFFIX,labs.google.com,🤖 OPenAI
+  - DOMAIN-SUFFIX,flow.google,🤖 OPenAI
+  - DOMAIN-SUFFIX,flow.google.com,🤖 OPenAI
+  - DOMAIN-SUFFIX,opal.google,🤖 OPenAI
+  - DOMAIN-SUFFIX,opal.google.com,🤖 OPenAI
+  - DOMAIN-SUFFIX,jules.google,🤖 OPenAI
+  - DOMAIN-SUFFIX,jules.google.com,🤖 OPenAI
+  - DOMAIN-SUFFIX,notebooklm.google,🤖 OPenAI
+  - DOMAIN-SUFFIX,notebooklm.google.com,🤖 OPenAI
+  - DOMAIN-SUFFIX,notebook.google,🤖 OPenAI
+  - DOMAIN-SUFFIX,notebook.google.com,🤖 OPenAI
+  - DOMAIN-SUFFIX,antigravity.google,🤖 OPenAI
+  - DOMAIN-SUFFIX,antigravity-unleash.goog,🤖 OPenAI
+  - DOMAIN-SUFFIX,stitch.withgoogle.com,🤖 OPenAI
+  - DOMAIN-SUFFIX,generativeai.google,🤖 OPenAI
+  - DOMAIN-SUFFIX,deepmind.com,🤖 OPenAI
+  - DOMAIN-SUFFIX,deepmind.google,🤖 OPenAI
+  # apis.google.com 是全 Google OAuth/公共 API 通用域，不只 Gemini 使用。
+  # 🤖 OPenAI 组带 REJECT 选项，一旦误选会切断所有 Google 登录，故只给
+  # 一个不含 REJECT 的稳定出口。
+  - DOMAIN,apis.google.com,🚀 节点选择
+  - DOMAIN-KEYWORD,colab,🤖 OPenAI
+  - DOMAIN-KEYWORD,developerprofiles,🤖 OPenAI
+  - DOMAIN-KEYWORD,generativelanguage,🤖 OPenAI
+  # 移除：identrust.com / challenges.cloudflare.com / cdn.auth0.com
+  # 原因：IdenTrust 是 CA / CF Challenge / Auth0 是通用 OAuth，非 OpenAI 专属
+  #       放 AI 组会让所有用 CF Turnstile 的网站挤占该组流量
+
+  # ========== 3. 🚀 节点选择（代理白名单） ==========
+  - DOMAIN-SUFFIX,xn--ngstr-lra8j.com,🚀 节点选择
+  - DOMAIN-SUFFIX,x.keya.pw,🚀 节点选择
+  - DOMAIN-SUFFIX,922220.xyz,🚀 节点选择
+  - DOMAIN-SUFFIX,services.googleapis.cn,🚀 节点选择
+  - DOMAIN-SUFFIX,ipify.org,🚀 节点选择
+  - DOMAIN-SUFFIX,linux.do,🚀 节点选择
+  - RULE-SET,GoogleCNProxyIP,🚀 节点选择
+  # services.googleapis.cn 保留走代理：DNS 解析到 Google 美国 IP，国内大概率阻断
+
+  # ========== 4. DIRECT 个人直连白名单 ==========
+  - DOMAIN-SUFFIX,icourse163.org,DIRECT
+  - DOMAIN-SUFFIX,51lss.com,DIRECT
+  - DOMAIN-SUFFIX,hybgzs.com,DIRECT
+  - DOMAIN-SUFFIX,elysia.h-e.top,DIRECT
+  - DOMAIN-SUFFIX,tutunbyy.uk,DIRECT
+  - DOMAIN-SUFFIX,ghxi.com,DIRECT
+  - DOMAIN-SUFFIX,lanzog.com,DIRECT
+  - DOMAIN-SUFFIX,lanosso.com,DIRECT
+  - DOMAIN-SUFFIX,tool.lu,DIRECT
+  - DOMAIN-SUFFIX,itab.link,DIRECT
+  - DOMAIN-SUFFIX,tx.lilyemby.my,DIRECT
+  - DOMAIN-SUFFIX,cdn.lilyemby.my,DIRECT
+  - DOMAIN-SUFFIX,lovestu.com,DIRECT
+
+  # ========== 5. DIRECT 规则集 ==========
+  - RULE-SET,Scholar,DIRECT
+  - RULE-SET,LocalAreaNetwork,DIRECT
+  - RULE-SET,UnBan,DIRECT
+  - RULE-SET,direct,DIRECT
+  - RULE-SET,ChinaDomain,DIRECT
+  - RULE-SET,ChinaMedia,DIRECT
+  - RULE-SET,LanZouYun,DIRECT
+
+  # ========== 6. IP 规则（下沉到最后，规则表更清晰） ==========
+  - IP-CIDR,11.102.6.5/32,DIRECT,no-resolve
+  - IP-CIDR,101.102.103.56/32,DIRECT,no-resolve
+  - IP-CIDR,1.0.0.1/32,DIRECT,no-resolve
+  - IP-CIDR6,2606:4700:4700::1111/128,DIRECT,no-resolve
+  - RULE-SET,ChinaCompanyIp,DIRECT
+  - RULE-SET,ChinaIp,DIRECT
+  - GEOIP,CN,DIRECT,no-resolve
+
+  # ========== 7. 兜底 ==========
+  - MATCH,🚀 节点选择
