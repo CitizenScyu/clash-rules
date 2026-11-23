@@ -7,6 +7,23 @@
 # 维护: 改规则直接改本文件并推送。Sub-Store 对本远程模板有磁盘持久化缓存, 默认 1 小时
 #       (源码 $Y(): resourceCacheTtl 缺省 36e5 ms), 推送后最多 1 小时生效;
 #       客户端订阅链接加 ?noCache=1 可立即绕过缓存。
+#
+# 【2026-11-23 23:52 起: 规则改由 Sub-Store 的「脚本操作」提供, 不再读本文件这三段】
+#   文件条目 dns-mihomo 的「文件操作」里现在有两个步骤:
+#     1. Add Proxies From Subscription Operator  —— 把组合订阅「全部机场」的节点写进 proxies
+#     2. Script Operator (内容类型: 本地内容)     —— 整体替换 proxy-groups / rule-providers / rules
+#   也就是本文件的 rule-providers / proxy-groups / rules 三段在线上输出里已被脚本覆盖, 只在脚本
+#   被停用时才会生效(兜底)。**以后改规则去面板: 文件 → dns-mihomo → 文件操作 → 脚本操作**,
+#   改完立即生效, 不用推送、不受 1 小时缓存影响。本文件只负责基础设置(mixed-port / allow-lan /
+#   mode / log-level / external-controller)。
+#   脚本副本留档: phoenix /root/sub-store/rules/dns-rules.js
+#   脚本相对本文件的三处差异(都有实测依据, 详见脚本头部注释):
+#     a. 规则集走 testingcf.jsdelivr.net。本文件的 raw.githubusercontent.com 在国内网络直连被重置,
+#        客户端拉不到规则集(2026-11-23 本机实测), 内核只记一条 error, 该规则集整组失效。
+#     b. Scholar 的 gist 地址去掉了钉死的版本号。旧版本号已被 GitHub 回收(所有镜像 404),
+#        内容没变(sha256 相同)。
+#     c. 规则 105 条 = DNS.ini 的 101 条 + Sparkle 覆写里多出的 4 条(openrouter.ai / anyrouter.top /
+#        emby.cloud.us.kg / 11.102.6.5 → 节点选择)。
 
 mixed-port: 7890
 allow-lan: true
